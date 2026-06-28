@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1115" />
+  <title>Jogadas de Basquete 3D</title>
+</head>
+<body>
+  <div id="app">
+    <canvas id="scene"></canvas>
+
+    <!-- Barra superior -->
+    <header id="topbar">
+      <button class="icon-btn" id="menuBtn" title="Ferramentas">☰</button>
+      <input id="playName" type="text" placeholder="Nome da jogada" />
+      <div class="spacer"></div>
+      <button class="btn" id="newBtn">Nova</button>
+      <button class="btn" id="saveBtn">Salvar</button>
+      <button class="btn" id="libraryBtn">Biblioteca</button>
+    </header>
+
+    <!-- Botões de câmera -->
+    <div id="cameras">
+      <button class="cam-btn" data-cam="top">Topo</button>
+      <button class="cam-btn" data-cam="diag">45°</button>
+      <button class="cam-btn" data-cam="hoop">Atrás do aro</button>
+      <button class="cam-btn" data-cam="side">Lateral</button>
+      <button class="cam-btn active" data-cam="free">Livre</button>
+    </div>
+
+    <!-- Painel de ferramentas -->
+    <aside id="tools" class="panel">
+      <div class="panel-title">Ferramentas</div>
+
+      <label class="toggle">
+        <input type="checkbox" id="togglePaths" checked />
+        <span>Mostrar trajetos</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="toggleDefense" checked />
+        <span>Mostrar defesa</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="toggleLabels" checked />
+        <span>Mostrar números</span>
+      </label>
+
+      <hr />
+
+      <button class="btn wide" id="resetFormationBtn">Resetar formação</button>
+      <button class="btn wide" id="clearFramesBtn">Limpar quadros</button>
+
+      <hr />
+      <div class="hint">
+        Arraste jogadores e bola na quadra. Crie a posição, toque em
+        <b>+ Quadro</b>, mova tudo, e repita. Aperte <b>▶</b> pra rodar a jogada.
+      </div>
+    </aside>
+
+    <!-- Linha do tempo -->
+    <footer id="timeline">
+      <button class="icon-btn play" id="playBtn" title="Reproduzir">▶</button>
+      <div id="frames" class="frames"></div>
+      <button class="btn add" id="addFrameBtn">+ Quadro</button>
+      <div class="speed">
+        <span>Vel.</span>
+        <input id="speed" type="range" min="0.4" max="2.5" step="0.1" value="1" />
+      </div>
+    </footer>
+
+    <!-- Biblioteca -->
+    <div id="libraryModal" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2>Biblioteca de jogadas</h2>
+          <button class="icon-btn" id="closeLibraryBtn">✕</button>
+        </div>
+        <div class="modal-actions">
+          <input id="setFilter" type="text" placeholder="Filtrar por set..." />
+          <button class="btn" id="importBtn">Importar</button>
+          <input id="importFile" type="file" accept="application/json" hidden />
+        </div>
+        <div id="playList" class="play-list"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
