@@ -1,18 +1,27 @@
 import * as THREE from 'three';
 
-// Presets de câmera: posição + alvo (foco) na meia quadra
-// A ação acontece em torno de z ~ 6, x = 0
-const TARGET = new THREE.Vector3(0, 1, 6);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
-export const PRESETS = {
-  top:  { pos: new THREE.Vector3(0, 24, 6.5), target: new THREE.Vector3(0, 0, 6.5) },
-  diag: { pos: new THREE.Vector3(9, 11, 21),  target: TARGET.clone() },
-  hoop: { pos: new THREE.Vector3(0, 6.5, -7), target: new THREE.Vector3(0, 1.2, 7) },
-  side: { pos: new THREE.Vector3(18, 9, 6),   target: TARGET.clone() },
-};
+// Presets de câmera por modo de quadra
+function presetsFor(mode) {
+  if (mode === 'full') {
+    return {
+      top:  { pos: V(0, 34, 14.5), target: V(0, 0, 14) },
+      diag: { pos: V(12, 17, 39),  target: V(0, 1, 13) },
+      hoop: { pos: V(0, 7, -7),    target: V(0, 1.2, 10) },
+      side: { pos: V(27, 14, 14),  target: V(0, 1, 14) },
+    };
+  }
+  return {
+    top:  { pos: V(0, 24, 6.5), target: V(0, 0, 6.5) },
+    diag: { pos: V(9, 11, 21),  target: V(0, 1, 6) },
+    hoop: { pos: V(0, 6.5, -7), target: V(0, 1.2, 7) },
+    side: { pos: V(18, 9, 6),   target: V(0, 1, 6) },
+  };
+}
 
 export function createCameraRig() {
-  const tween = {
+  return {
     active: false,
     fromPos: new THREE.Vector3(),
     toPos: new THREE.Vector3(),
@@ -21,12 +30,11 @@ export function createCameraRig() {
     t: 0,
     dur: 0.7,
   };
-  return tween;
 }
 
-export function goToPreset(tween, camera, controls, name) {
-  const p = PRESETS[name];
-  if (!p) return; // 'free' => não faz nada, só libera o orbit
+export function goToPreset(tween, camera, controls, name, mode = 'half') {
+  const p = presetsFor(mode)[name];
+  if (!p) return; // 'free' => não faz nada
   tween.fromPos.copy(camera.position);
   tween.toPos.copy(p.pos);
   tween.fromTgt.copy(controls.target);

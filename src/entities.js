@@ -1,12 +1,21 @@
 import * as THREE from 'three';
 
-// Sprite com o número/rótulo do jogador
-function makeLabel(text, bgColor) {
+// Paleta dos times (estilo Kuroko no Basket)
+const COLORS = {
+  offense: 0x0e3a86,      // azul-marinho
+  offenseDark: 0x081f4d,  // sombra/ombros
+  defense: 0xc42a37,      // vermelho
+  defenseDark: 0x7d141d,
+};
+const CSS = { offense: '#0e3a86', defense: '#c42a37' };
+
+// Sprite com o número do jogador
+function makeLabel(text, cssColor) {
   const size = 128;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = bgColor;
+  ctx.fillStyle = cssColor;
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
   ctx.fill();
@@ -22,7 +31,7 @@ function makeLabel(text, bgColor) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 4;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
-  sprite.scale.set(0.9, 0.9, 0.9);
+  sprite.scale.set(0.7, 0.7, 0.7);
   sprite.position.y = 2.35;
   sprite.renderOrder = 10;
   return sprite;
@@ -35,13 +44,13 @@ function makeShadow() {
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d');
   const grad = ctx.createRadialGradient(size / 2, size / 2, 2, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, 'rgba(0,0,0,0.45)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.5)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
   const tex = new THREE.CanvasTexture(canvas);
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.1, 1.1),
+    new THREE.PlaneGeometry(0.95, 0.95),
     new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
   );
   mesh.rotation.x = -Math.PI / 2;
@@ -49,72 +58,112 @@ function makeShadow() {
   return mesh;
 }
 
-// Cria um jogador (corpo cônico + cabeça)
-function makePlayer(color) {
+// Casca de glow neon (faces traseiras ampliadas, blending aditivo) — silhueta luminosa
+function makeGlowShell(geometry, scale, y) {
+  const mesh = new THREE.Mesh(
+    geometry,
+    new THREE.MeshBasicMaterial({
+      color: 0x5af0ff,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+  );
+  mesh.scale.setScalar(scale);
+  mesh.position.y = y;
+  if (geometry === GLOW_BODY_GEO) mesh.rotation.x = Math.PI;
+  return mesh;
+}
+
+// geometrias compartilhadas p/ o glow (criadas uma vez) — escala realista
+// jogador ~2,0 m de altura, corpo ~0,6 m, cabeça ~0,5 m
+const GLOW_BODY_GEO = new THREE.ConeGeometry(0.3, 1.5, 30);
+const GLOW_HEAD_GEO = new THREE.SphereGeometry(0.25, 26, 18);
+
+// Jogador: cabeça esférica + cone invertido (ponta pra baixo) + "ombros" elípticos
+function makePlayer(color, darkColor) {
   const group = new THREE.Group();
 
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0.05 });
-  const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.5, 24), bodyMat);
-  body.position.y = 0.75;
+  // corpo: cone com a ponta voltada para baixo (ponta ~0,02 m, topo ~1,52 m)
+  const body = new THREE.Mesh(
+    GLOW_BODY_GEO.clone(),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.05, emissive: color, emissiveIntensity: 0.14 })
+  );
+  body.rotation.x = Math.PI; // inverte: base larga em cima, ponta embaixo
+  body.position.y = 0.77;
   body.castShadow = true;
   group.add(body);
 
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xffe0bd, roughness: 0.5 });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 16), headMat);
-  head.position.y = 1.75;
+  // "ombros": disco escuro no topo do cone (a elipse da referência)
+  const collar = new THREE.Mesh(
+    new THREE.CircleGeometry(0.31, 30),
+    new THREE.MeshStandardMaterial({ color: darkColor, roughness: 0.6, side: THREE.DoubleSide })
+  );
+  collar.rotation.x = -Math.PI / 2;
+  collar.position.y = 1.52;
+  group.add(collar);
+
+  // cabeça (topo ~2,02 m)
+  const head = new THREE.Mesh(
+    GLOW_HEAD_GEO.clone(),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.45, emissive: color, emissiveIntensity: 0.14 })
+  );
+  head.position.y = 1.77;
   head.castShadow = true;
   group.add(head);
 
-  // anel da cor no chão pra reforçar o time
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(0.5, 0.04, 8, 28),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
-  );
-  ring.rotation.x = Math.PI / 2;
-  ring.position.y = 0.05;
-  group.add(ring);
+  // glow neon (escondido por padrão; ligado na seleção)
+  const glow = new THREE.Group();
+  glow.add(makeGlowShell(GLOW_BODY_GEO, 1.18, 0.77));
+  glow.add(makeGlowShell(GLOW_HEAD_GEO, 1.22, 1.77));
+  glow.visible = false;
+  group.add(glow);
+  group.userData.glow = glow;
 
-  group.userData.body = body;
   return group;
 }
 
 function makeBall() {
   const group = new THREE.Group();
+  // bola tamanho 7 (~0,24 m de diâmetro)
   const ball = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 20, 16),
+    new THREE.SphereGeometry(0.12, 22, 16),
     new THREE.MeshStandardMaterial({ color: 0xff7a18, roughness: 0.55 })
   );
   ball.castShadow = true;
-  ball.position.y = 0.16;
+  ball.position.y = 0;
   group.add(ball);
   group.userData.ball = ball;
   return group;
 }
 
-const COLORS = { offense: 0x2f7bff, defense: 0xff4d4d };
-
 // Cria todos os atores e devolve um Map id -> ator
 export function createActors(scene) {
   const actors = new Map();
 
-  const add = (id, team, label, color) => {
+  const add = (id, team, label) => {
     const root = new THREE.Group();
-    const visual = team === 'ball' ? makeBall() : makePlayer(color);
+    const isOff = team === 'offense';
+    const color = isOff ? COLORS.offense : COLORS.defense;
+    const dark = isOff ? COLORS.offenseDark : COLORS.defenseDark;
+
+    const visual = team === 'ball' ? makeBall() : makePlayer(color, dark);
     root.add(visual);
 
-    const shadow = makeShadow();
-    root.add(shadow);
-
     if (team !== 'ball') {
-      const lbl = makeLabel(label, color === COLORS.offense ? '#1d5fd6' : '#cc2b2b');
+      const shadow = makeShadow();
+      root.add(shadow);
+      const lbl = makeLabel(label, isOff ? CSS.offense : CSS.defense);
       root.add(lbl);
       root.userData.label = lbl;
     }
 
-    // Disco de seleção (escondido por padrão)
+    // Anel de seleção (escondido por padrão)
     const sel = new THREE.Mesh(
-      new THREE.RingGeometry(0.55, 0.66, 32),
-      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+      new THREE.RingGeometry(0.46, 0.58, 36),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95, side: THREE.DoubleSide })
     );
     sel.rotation.x = -Math.PI / 2;
     sel.position.y = 0.02;
@@ -123,14 +172,14 @@ export function createActors(scene) {
 
     scene.add(root);
 
-    const actor = { id, team, label, color, mesh: root, selectionRing: sel, visual };
+    const actor = { id, team, label, color, mesh: root, selectionRing: sel, visual, glow: visual.userData.glow || null };
     root.userData.actorId = id;
     actors.set(id, actor);
   };
 
-  for (let i = 1; i <= 5; i++) add(`O${i}`, 'offense', String(i), COLORS.offense);
-  for (let i = 1; i <= 5; i++) add(`X${i}`, 'defense', String(i), COLORS.defense);
-  add('BALL', 'ball', '', COLORS.offense);
+  for (let i = 1; i <= 5; i++) add(`O${i}`, 'offense', String(i));
+  for (let i = 1; i <= 5; i++) add(`X${i}`, 'defense', String(i));
+  add('BALL', 'ball', '');
 
   return actors;
 }

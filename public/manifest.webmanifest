@@ -1,0 +1,14 @@
+{
+  "name": "Jogadas de Basquete 3D",
+  "short_name": "Jogadas",
+  "description": "Simulador 3D de jogadas de basquete — monte ataques e defesas em meia ou quadra inteira.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0e13",
+  "theme_color": "#0f1115",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

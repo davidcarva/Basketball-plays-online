@@ -1,4 +1,16 @@
 const KEY = 'bball_plays_v1';
+const DRAFT_KEY = 'bball_draft_v1';
+
+// Rascunho (autosave) — preserva o trabalho não salvo entre sessões
+export function saveDraft(play) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(play)); } catch { /* cota cheia */ }
+}
+export function getDraft() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { return null; }
+}
+export function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
 
 export function getAllPlays() {
   try {
@@ -36,6 +48,29 @@ export function exportPlay(play) {
   a.download = `${(play.name || 'jogada').replace(/[^\w\-]+/g, '_')}.json`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ---------- Compartilhar por link (jogada codificada na URL) ----------
+function encodePlay(play) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(play))));
+}
+export function sharePlayURL(play) {
+  return location.origin + location.pathname + '#play=' + encodePlay(play);
+}
+export function readSharedPlay() {
+  const m = location.hash.match(/[#&]play=([^&]+)/);
+  if (!m) return null;
+  try {
+    const play = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    if (!Array.isArray(play.frames)) return null;
+    play.id = crypto.randomUUID();
+    return play;
+  } catch {
+    return null;
+  }
+}
+export function clearShareHash() {
+  history.replaceState(null, '', location.pathname + location.search);
 }
 
 export function importPlayFile(file) {

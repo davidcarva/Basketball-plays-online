@@ -5,6 +5,12 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0f1115" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Jogadas" />
   <title>Jogadas de Basquete 3D</title>
 </head>
 <body>
@@ -15,24 +21,74 @@
     <header id="topbar">
       <button class="icon-btn" id="menuBtn" title="Ferramentas">☰</button>
       <input id="playName" type="text" placeholder="Nome da jogada" />
+      <button class="icon-btn" id="undoBtn" title="Desfazer (Ctrl+Z)" disabled>↶</button>
+      <button class="icon-btn" id="redoBtn" title="Refazer (Ctrl+Y)" disabled>↷</button>
       <div class="spacer"></div>
+      <button class="icon-btn" id="helpBtn" title="Ajuda / atalhos">?</button>
       <button class="btn" id="newBtn">Nova</button>
       <button class="btn" id="saveBtn">Salvar</button>
       <button class="btn" id="libraryBtn">Biblioteca</button>
     </header>
 
+    <!-- Badge: contra quais defesas a jogada funciona -->
+    <div id="vsBadge" class="vs-badge hidden"></div>
+
     <!-- Botões de câmera -->
     <div id="cameras">
       <button class="cam-btn" data-cam="top">Topo</button>
-      <button class="cam-btn" data-cam="diag">45°</button>
+      <button class="cam-btn active" data-cam="diag">45°</button>
       <button class="cam-btn" data-cam="hoop">Atrás do aro</button>
       <button class="cam-btn" data-cam="side">Lateral</button>
-      <button class="cam-btn active" data-cam="free">Livre</button>
+      <button class="cam-btn" data-cam="free">Livre</button>
     </div>
 
     <!-- Painel de ferramentas -->
     <aside id="tools" class="panel">
       <div class="panel-title">Ferramentas</div>
+
+      <div class="field">
+        <span>Set</span>
+        <input id="setInput" type="text" placeholder="categoria…" />
+      </div>
+
+      <div class="field">
+        <span>Formato</span>
+        <div class="seg">
+          <button id="size5" class="seg-btn active">5v5</button>
+          <button id="size3" class="seg-btn">3v3</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>Quadra</span>
+        <div class="seg">
+          <button id="modeHalf" class="seg-btn active">Meia</button>
+          <button id="modeFull" class="seg-btn">Inteira</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>Visão</span>
+        <div class="seg">
+          <button id="view3d" class="seg-btn active">3D</button>
+          <button id="view2d" class="seg-btn">2D</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>Defesa</span>
+        <div class="seg-inline">
+          <select id="defenseSelect"></select>
+          <button id="reactBtn" class="icon-btn small" title="Defesa reage à jogada (todos os quadros)">↻</button>
+        </div>
+      </div>
+
+      <div class="vs-edit">
+        <div class="vs-edit-title">Funciona contra</div>
+        <div id="vsChips" class="vs-chips"></div>
+      </div>
+
+      <hr />
 
       <label class="toggle">
         <input type="checkbox" id="togglePaths" checked />
@@ -53,11 +109,33 @@
       <button class="btn wide" id="clearFramesBtn">Limpar quadros</button>
 
       <hr />
+      <div class="vs-edit-title">Exportar / compartilhar</div>
+      <div class="export-row">
+        <button class="btn" id="exportImgBtn">Imagem</button>
+        <button class="btn" id="exportVidBtn">Vídeo</button>
+        <button class="btn" id="shareBtn">Link</button>
+      </div>
+
+      <hr />
       <div class="hint">
         Arraste jogadores e bola na quadra. Crie a posição, toque em
         <b>+ Quadro</b>, mova tudo, e repita. Aperte <b>▶</b> pra rodar a jogada.
       </div>
     </aside>
+
+    <!-- Legenda de símbolos -->
+    <button class="icon-btn" id="legendBtn" title="Legenda">𝑖</button>
+    <div id="legendPanel" class="legend hidden">
+      <div class="legend-title">Legenda</div>
+      <div class="legend-row"><span class="sw" style="background:#2f7bff"></span> Ataque</div>
+      <div class="legend-row"><span class="sw" style="background:#c42a37"></span> Defesa</div>
+      <div class="legend-row"><span class="sw ball"></span> Bola (segue o dono)</div>
+      <div class="legend-row"><span class="ln solid"></span> Corte (sem bola)</div>
+      <div class="legend-row"><svg class="ln-svg" viewBox="0 0 24 8"><polyline points="0,4 4,1 8,7 12,1 16,7 20,1 24,4" fill="none" stroke="#6fa8ff" stroke-width="1.5"/></svg> Drible (com bola)</div>
+      <div class="legend-row"><span class="ln dashed"></span> Passe</div>
+      <div class="legend-row"><span class="sw glow"></span> Selecionado (toque pra mover)</div>
+      <div class="legend-row"><span class="sw rim"></span> Aro / cesta</div>
+    </div>
 
     <!-- Linha do tempo -->
     <footer id="timeline">
@@ -78,11 +156,40 @@
           <button class="icon-btn" id="closeLibraryBtn">✕</button>
         </div>
         <div class="modal-actions">
-          <input id="setFilter" type="text" placeholder="Filtrar por set..." />
+          <input id="setFilter" type="text" placeholder="Buscar..." />
+          <select id="defFilter" title="Filtrar por defesa"></select>
           <button class="btn" id="importBtn">Importar</button>
           <input id="importFile" type="file" accept="application/json" hidden />
         </div>
         <div id="playList" class="play-list"></div>
+      </div>
+    </div>
+
+    <!-- Onboarding / ajuda -->
+    <div id="onboardModal" class="modal hidden">
+      <div class="modal-box onboard">
+        <div class="modal-header">
+          <h2>Bem-vindo 🏀</h2>
+          <button class="icon-btn" id="closeOnboardBtn">✕</button>
+        </div>
+        <div class="onboard-body">
+          <p>Monte jogadas em 3D, fáceis de visualizar:</p>
+          <ul>
+            <li><b>Arraste</b> jogadores e a bola na quadra (a bola gruda em quem está perto).</li>
+            <li>Toque em <b>+ Quadro</b>, mova as peças, e repita pra criar o movimento.</li>
+            <li>Aperte <b>▶</b> pra rodar a jogada (passe vira arco automático).</li>
+            <li>Troque a <b>câmera</b> (Topo, 45°, Atrás do aro, Lateral) à direita.</li>
+            <li>No painel <b>☰</b>: formato 5v5/3v3, meia/inteira, e a <b>defesa</b> reage à jogada.</li>
+            <li><b>Biblioteca</b> tem modelos FIBA prontos, filtráveis por defesa.</li>
+          </ul>
+          <div class="onboard-keys">
+            <span><b>Espaço</b> tocar</span><span><b>← →</b> quadros</span>
+            <span><b>N</b> novo quadro</span><span><b>Ctrl+Z</b> desfazer</span>
+          </div>
+        </div>
+        <div class="modal-actions end">
+          <button class="btn add" id="startOnboardBtn">Começar</button>
+        </div>
       </div>
     </div>
 

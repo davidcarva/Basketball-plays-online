@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { updateActorPosition, setSelection } from './play.js';
+import { updateActorPosition, setSelection, assignBallByPosition } from './play.js';
 
 // Arrastar jogadores/bola na quadra (mouse e toque)
 export function initInteraction(app) {
@@ -10,6 +10,7 @@ export function initInteraction(app) {
   const hit = new THREE.Vector3();
 
   let dragging = null; // id do ator sendo arrastado
+  let lastX = 0, lastZ = 0;
 
   function setPointer(e) {
     const rect = canvas.getBoundingClientRect();
@@ -56,15 +57,20 @@ export function initInteraction(app) {
     setPointer(e);
     raycaster.setFromCamera(pointer, app.camera);
     if (raycaster.ray.intersectPlane(dragPlane, hit)) {
+      lastX = hit.x;
+      lastZ = hit.z;
       updateActorPosition(app, dragging, hit.x, hit.z);
     }
   }
 
   function onUp(e) {
     if (!dragging) return;
+    // soltar a bola: define posse (gruda no jogador mais próximo) ou bola solta
+    if (dragging === 'BALL') assignBallByPosition(app, lastX, lastZ);
     dragging = null;
     app.controls.enabled = true;
     canvas.releasePointerCapture?.(e.pointerId);
+    app.commit?.(); // marca ponto no histórico (dedupe ignora cliques sem mover)
   }
 
   // capture:true => roda antes do OrbitControls, permitindo desligá-lo a tempo
