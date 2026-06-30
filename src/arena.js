@@ -1,23 +1,16 @@
 import * as THREE from 'three';
 
-// Cenário de arena (estilo ginásio de anime): piso azul ao redor, arquibancada
-// com torcida em alguns degraus e paredes escuras ao fundo. Tudo afastado e
+// Cenário de arena (estilo ginásio de anime): piso azul ao redor e a
+// estrutura das arquibancadas (degraus vazios) ao fundo. Tudo afastado e
 // baixo o bastante para não atrapalhar a visão da meia quadra.
 
-const CROWD_PALETTE = [
-  0x9aa3ad, 0x6b7280, 0x4b5563, 0xb9a48a, 0x8a5a44,
-  0x2f3b52, 0x7a2e34, 0x35506b, 0xc9c2b6, 0x586072,
-];
-
-// Constrói uma arquibancada (degraus em escada + torcida) no espaço local:
-// tangente = X (comprimento), profundidade/altura sobem em +Z/+Y.
+// Constrói uma arquibancada (só a estrutura de degraus em escada) no espaço
+// local: tangente = X (comprimento), profundidade/altura sobem em +Z/+Y.
 function buildStand(length) {
   const group = new THREE.Group();
   const rows = 4;
   const rowRise = 0.6;
   const rowDepth = 1.25;
-  const spacing = 0.95;
-  const bodyH = 1.0;
 
   // Degraus (escada que sobe afastando-se da quadra)
   const stepMat = new THREE.MeshStandardMaterial({ color: 0x232833, roughness: 0.9 });
@@ -27,42 +20,6 @@ function buildStand(length) {
     step.position.set(0, h / 2, r * rowDepth + rowDepth / 2);
     group.add(step);
   }
-
-  // Torcida (InstancedMesh: corpos + cabeças)
-  const seatsPerRow = Math.floor(length / spacing);
-  const total = rows * seatsPerRow;
-
-  const bodyGeo = new THREE.BoxGeometry(0.45, bodyH, 0.45);
-  const bodyMat = new THREE.MeshStandardMaterial({ roughness: 0.85 });
-  const bodies = new THREE.InstancedMesh(bodyGeo, bodyMat, total);
-
-  const headGeo = new THREE.SphereGeometry(0.17, 10, 8);
-  const headMat = new THREE.MeshStandardMaterial({ roughness: 0.7 });
-  const heads = new THREE.InstancedMesh(headGeo, headMat, total);
-
-  const m = new THREE.Matrix4();
-  const color = new THREE.Color();
-  const skin = new THREE.Color(0x9c6b4f);
-  let i = 0;
-  for (let r = 0; r < rows; r++) {
-    const topY = (r + 1) * rowRise;            // topo do degrau
-    const z = r * rowDepth + rowDepth * 0.32;  // assento na frente do degrau
-    for (let s = 0; s < seatsPerRow; s++) {
-      const x = -length / 2 + spacing / 2 + s * spacing + (Math.random() - 0.5) * 0.2;
-      const yBody = topY + bodyH / 2;
-      m.makeTranslation(x, yBody, z);
-      bodies.setMatrixAt(i, m);
-      bodies.setColorAt(i, color.setHex(CROWD_PALETTE[(Math.random() * CROWD_PALETTE.length) | 0]));
-
-      m.makeTranslation(x, topY + bodyH + 0.15, z);
-      heads.setMatrixAt(i, m);
-      heads.setColorAt(i, skin);
-      i++;
-    }
-  }
-  bodies.instanceColor.needsUpdate = true;
-  heads.instanceColor.needsUpdate = true;
-  group.add(bodies, heads);
 
   return group;
 }
