@@ -25,6 +25,7 @@
       <button class="icon-btn" id="redoBtn" title="Refazer (Ctrl+Y)" disabled>↷</button>
       <div class="spacer"></div>
       <button class="icon-btn" id="helpBtn" title="Ajuda / atalhos">?</button>
+      <button class="btn" id="authBtn" title="Entrar / criar conta">Entrar</button>
       <button class="btn" id="newBtn">Nova</button>
       <button class="btn" id="saveBtn">Salvar</button>
       <button class="btn" id="libraryBtn">Biblioteca</button>
@@ -181,6 +182,28 @@
           <input id="importFile" type="file" accept="application/json" hidden />
         </div>
         <div id="playList" class="play-list"></div>
+      </div>
+    </div>
+
+    <!-- Login / conta -->
+    <div id="authModal" class="modal hidden">
+      <div class="modal-box auth">
+        <div class="modal-header">
+          <h2>Entrar na conta</h2>
+          <button class="icon-btn" id="closeAuthBtn">✕</button>
+        </div>
+        <div class="auth-body">
+          <p class="auth-intro">Entre para salvar suas jogadas na nuvem e acessá-las de qualquer dispositivo.</p>
+          <button class="btn wide google" id="googleBtn">Entrar com Google</button>
+          <div class="auth-sep"><span>ou com e-mail</span></div>
+          <input id="authEmail" type="email" placeholder="seu@email.com" autocomplete="email" />
+          <input id="authPass" type="password" placeholder="senha" autocomplete="current-password" />
+          <div class="auth-actions">
+            <button class="btn add" id="emailLoginBtn">Entrar</button>
+            <button class="btn" id="emailRegisterBtn">Criar conta</button>
+          </div>
+          <div id="authError" class="auth-error hidden"></div>
+        </div>
       </div>
     </div>
 

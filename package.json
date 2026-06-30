@@ -9,6 +9,7 @@
     "preview": "vite preview --host"
   },
   "dependencies": {
+    "firebase": "^12.15.0",
     "three": "^0.169.0"
   },
   "devDependencies": {

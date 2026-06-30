@@ -5,7 +5,12 @@ import {
 } from './play.js';
 import { applyReactiveToPlay, DEFENSE_SCHEMES } from './defense.js';
 import { getPresets } from './presets.js';
-import { getAllPlays, savePlay, deletePlay, exportPlay, importPlayFile, saveDraft, sharePlayURL } from './storage.js';
+import { exportPlay, importPlayFile, saveDraft, sharePlayURL } from './storage.js';
+import { listPlays, savePlay, removePlay, syncLocalToCloud } from './plays-repo.js';
+import {
+  cloudEnabled, onAuth, currentUser, signOutUser,
+  signInGoogle, signInEmail, registerEmail, authErrorMessage,
+} from './cloud.js';
 import { canUndo, canRedo } from './history.js';
 import { getSettings, saveSettings } from './settings.js';
 
@@ -16,6 +21,15 @@ export function initUI(app) {
     playName: $('playName'),
     menuBtn: $('menuBtn'),
     tools: $('tools'),
+    authBtn: $('authBtn'),
+    authModal: $('authModal'),
+    closeAuthBtn: $('closeAuthBtn'),
+    googleBtn: $('googleBtn'),
+    authEmail: $('authEmail'),
+    authPass: $('authPass'),
+    emailLoginBtn: $('emailLoginBtn'),
+    emailRegisterBtn: $('emailRegisterBtn'),
+    authError: $('authError'),
     newBtn: $('newBtn'),
     saveBtn: $('saveBtn'),
     libraryBtn: $('libraryBtn'),
@@ -371,14 +385,18 @@ export function initUI(app) {
     loadPlay(createPlay('Nova jogada'));
     toast('Nova jogada');
   });
-  els.saveBtn.addEventListener('click', () => {
+  els.saveBtn.addEventListener('click', async () => {
     app.state.play.name = els.playName.value || 'Sem nome';
     app.state.play.set = els.setInput.value.trim();
     app.state.play.mode = app.state.mode;
     app.state.play.teamSize = app.state.teamSize;
     if (!Array.isArray(app.state.play.vs)) app.state.play.vs = [];
-    savePlay(app.state.play);
-    toast('Jogada salva ✓');
+    try {
+      await savePlay(app.state.play);
+      toast(currentUser() ? 'Jogada salva na nuvem ☁️' : 'Jogada salva ✓');
+    } catch {
+      toast('Falha ao salvar na nuvem');
+    }
   });
 
   // ---------- Biblioteca ----------
@@ -441,9 +459,9 @@ export function initUI(app) {
       const del = document.createElement('button');
       del.className = 'btn mini';
       del.textContent = 'Excluir';
-      del.addEventListener('click', () => {
+      del.addEventListener('click', async () => {
         if (!confirm(`Excluir "${p.name}"?`)) return;
-        deletePlay(p.id);
+        await removePlay(p.id);
         renderLibrary();
       });
       row.append(exp, del);
@@ -451,7 +469,7 @@ export function initUI(app) {
     return row;
   }
 
-  function renderLibrary() {
+  async function renderLibrary() {
     const filter = (els.setFilter.value || '').toLowerCase();
     const def = els.defFilter.value || '';
     els.playList.innerHTML = '';
@@ -466,15 +484,25 @@ export function initUI(app) {
       presets.forEach((p) => els.playList.appendChild(makeRow(p, true)));
     }
 
-    // Minhas jogadas
-    const plays = getAllPlays()
-      .filter((p) => matchesFilter(p, filter, def))
-      .sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
-
+    // Minhas jogadas (nuvem se logado; senão local)
+    const signed = !!currentUser();
     const h2 = document.createElement('div');
     h2.className = 'list-header';
-    h2.textContent = '💾 Minhas jogadas';
+    h2.textContent = signed ? '☁️ Minhas jogadas (nuvem)' : '💾 Minhas jogadas (neste dispositivo)';
     els.playList.appendChild(h2);
+
+    let plays = [];
+    try {
+      plays = (await listPlays())
+        .filter((p) => matchesFilter(p, filter, def))
+        .sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
+    } catch {
+      const err = document.createElement('div');
+      err.className = 'empty';
+      err.textContent = 'Não foi possível carregar as jogadas da nuvem.';
+      els.playList.appendChild(err);
+      return;
+    }
 
     if (!plays.length) {
       const empty = document.createElement('div');
@@ -502,7 +530,7 @@ export function initUI(app) {
     if (!file) return;
     try {
       const play = await importPlayFile(file);
-      savePlay(play);
+      await savePlay(play);
       renderLibrary();
       toast('Importada ✓');
     } catch {
@@ -514,6 +542,59 @@ export function initUI(app) {
   // filtro de defesa na biblioteca
   els.defFilter.innerHTML = '<option value="">Toda defesa</option>' +
     DEFENSE_SCHEMES.map((s) => `<option value="${s.id}">vs ${SHORT[s.id] || s.name}</option>`).join('');
+
+  // ---------- Login / conta (Firebase) ----------
+  function showAuthError(e) {
+    els.authError.textContent = authErrorMessage(e);
+    els.authError.classList.remove('hidden');
+  }
+  function openAuth() {
+    els.authError.classList.add('hidden');
+    els.authModal.classList.remove('hidden');
+  }
+  function closeAuth() { els.authModal.classList.add('hidden'); }
+
+  if (!cloudEnabled) {
+    els.authBtn.style.display = 'none'; // sem config Firebase: app só local
+  } else {
+    els.authBtn.addEventListener('click', () => {
+      if (currentUser()) {
+        if (confirm('Sair da sua conta? Suas jogadas continuam na nuvem.')) signOutUser();
+      } else {
+        openAuth();
+      }
+    });
+    els.closeAuthBtn.addEventListener('click', closeAuth);
+    els.authModal.addEventListener('click', (e) => { if (e.target === els.authModal) closeAuth(); });
+
+    els.googleBtn.addEventListener('click', async () => {
+      try { await signInGoogle(); closeAuth(); } catch (e) { showAuthError(e); }
+    });
+    els.emailLoginBtn.addEventListener('click', async () => {
+      try { await signInEmail(els.authEmail.value.trim(), els.authPass.value); closeAuth(); }
+      catch (e) { showAuthError(e); }
+    });
+    els.emailRegisterBtn.addEventListener('click', async () => {
+      try { await registerEmail(els.authEmail.value.trim(), els.authPass.value); closeAuth(); }
+      catch (e) { showAuthError(e); }
+    });
+    els.authPass.addEventListener('keydown', (e) => { if (e.key === 'Enter') els.emailLoginBtn.click(); });
+
+    // Reage a login/logout: atualiza o botão, sincroniza e recarrega a biblioteca
+    onAuth(async (user) => {
+      els.authBtn.textContent = user ? (user.displayName?.split(' ')[0] || 'Conta') : 'Entrar';
+      els.authBtn.title = user
+        ? `Conectado: ${user.email || ''} — clique para sair`
+        : 'Entrar / criar conta';
+      if (user) {
+        try {
+          const n = await syncLocalToCloud();
+          toast(n ? `Conectado ✓ — ${n} jogada(s) enviada(s) à nuvem` : 'Conectado ✓');
+        } catch { toast('Conectado ✓'); }
+      }
+      if (!els.libraryModal.classList.contains('hidden')) renderLibrary();
+    });
+  }
 
   // estado inicial da UI
   syncUI();

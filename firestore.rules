@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Cada usuário só lê/escreve as próprias jogadas em users/{uid}/plays/*
+    match /users/{uid}/plays/{playId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
