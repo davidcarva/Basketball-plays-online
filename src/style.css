@@ -134,6 +134,13 @@ html, body {
 }
 .seg-inline { display: flex; align-items: center; gap: 6px; }
 .icon-btn.small { width: 34px; height: 34px; font-size: 16px; }
+.team-colors { display: flex; align-items: center; gap: 6px; }
+.team-colors input[type=color] {
+  width: 34px; height: 30px; padding: 0; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--panel); cursor: pointer;
+}
+.team-colors .seg-btn { border: 1px solid var(--line); border-radius: 8px; font-size: 11px; padding: 6px 8px; }
+#teamName, #setInput { width: 150px; }
 .list-header { font-size: 12px; color: var(--accent-2); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 12px 11px 4px; }
 
 /* "Funciona contra" — chips editáveis */

@@ -34,6 +34,32 @@ function arc(cx, cz, r, a0, a1, segments = 48) {
   return pts;
 }
 
+// Textura de madeira procedural (tábuas + grão) p/ o piso
+function woodTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#d9b079';
+  ctx.fillRect(0, 0, 512, 512);
+  for (let x = 0; x < 512; x += 56) {
+    const v = 18 + Math.random() * 22;
+    ctx.fillStyle = `rgba(150,108,58,${(v / 100).toFixed(2)})`;
+    ctx.fillRect(x, 0, 56, 512);
+    ctx.strokeStyle = 'rgba(80,50,20,0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+    for (let i = 0; i < 14; i++) {
+      ctx.strokeStyle = `rgba(120,80,40,${(0.04 + Math.random() * 0.05).toFixed(3)})`;
+      const y = Math.random() * 512;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.bezierCurveTo(x + 18, y + 2, x + 38, y - 2, x + 56, y); ctx.stroke();
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
+
 // Emblema central (personalidade), desenhado num disco no chão
 function makeCenterLogo() {
   const s = 256;
@@ -123,7 +149,7 @@ function buildEndGroup(mat) {
   // aro: laranja emissivo
   const rim = new THREE.Mesh(
     new THREE.TorusGeometry(rimRadius, 0.025, 12, 32),
-    new THREE.MeshStandardMaterial({ color: 0xff5a00, emissive: 0xff4d00, emissiveIntensity: 0.9, metalness: 0.3, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: 0xff5a00, emissive: 0xff4d00, emissiveIntensity: 0.85, metalness: 0.3, roughness: 0.4 })
   );
   rim.rotation.x = Math.PI / 2;
   rim.position.set(0, basketH, basketZ);
@@ -163,10 +189,12 @@ export function buildCourt(mode = 'half') {
   const hw = width / 2;
   const mat = lineMat();
 
-  // ----- Piso -----
+  // ----- Piso (madeira) -----
+  const wood = woodTexture();
+  wood.repeat.set(3, Math.max(2, Math.round(length / 4)));
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(width, length),
-    new THREE.MeshStandardMaterial({ color: 0xd9b079, roughness: 0.9, metalness: 0 })
+    new THREE.MeshStandardMaterial({ map: wood, color: 0xffffff, roughness: 0.85, metalness: 0 })
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(0, 0, length / 2);

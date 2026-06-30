@@ -2,6 +2,13 @@
 
 Avaliação do app e plano extenso de melhoria (usabilidade, criação de jogadas, estética/clareza, compartilhamento e plataforma).
 
+## Progresso (atualizado)
+- ✅ **Sprint 1 — UX:** desfazer/refazer, atalhos, autosave, legenda, onboarding, PWA, deploy (Vercel).
+- ✅ **Sprint 2 — Clareza:** modo 2D prancheta, notação (drible/corte/passe), exportar imagem PNG + vídeo WebM, link compartilhável.
+- ✅ **Sprint 3 — Estética:** trilha da bola, jogador inclina no movimento, bola com gomos, auto-câmera, **textura de madeira** no piso, **identidade de time** (cores ataque/defesa + nome + preset daltônico), **intro de câmera** ao abrir jogada. (Bloom foi testado e **removido** — ficou forte/feio.) ⏳ opcional: piso reflexivo, tema claro/escuro.
+- ⏳ **Sprint 4 — Criação:** ramificação condicional, modo gravação, blocos de fundamentos, notação extra (bloqueio/handoff/arremesso), defesa 2.0, coaching points, playbooks.
+- ⏳ **Sprint 5 — Plataforma:** nuvem/login/comunidade, biblioteca com capas/favoritos/tags, testes, LOD, i18n.
+
 ## Avaliação do estado atual
 
 ### Pontos fortes
@@ -62,11 +69,11 @@ Avaliação do app e plano extenso de melhoria (usabilidade, criação de jogada
 5. **i18n** (pt/en) p/ alcance.
 
 ## Roadmap sugerido (sequência)
-- **Sprint 1 — Quick wins de UX:** onboarding, desfazer/refazer, atalhos, autosave, legenda, PWA, deploy.
-- **Sprint 2 — Clareza:** modo 2D prancheta + notação tática + export imagem/GIF + link compartilhável.
-- **Sprint 3 — Estética "foda":** bloom/reflexo/trilhas/facing + auto-cam + identidade de time.
-- **Sprint 4 — Big bet de criação:** ramificação condicional + modo gravação + blocos de fundamentos.
-- **Sprint 5 — Plataforma:** nuvem/login/comunidade + defesa inteligente 2.0.
+- ✅ **Sprint 1 — Quick wins de UX:** onboarding, desfazer/refazer, atalhos, autosave, legenda, PWA, deploy.
+- ✅ **Sprint 2 — Clareza:** modo 2D prancheta + notação tática + export imagem/vídeo + link compartilhável.
+- ✅ **Sprint 3 — Estética:** trilhas + lean + gomos + auto-cam + madeira + identidade de time + intro de câmera (bloom removido); reflexo/tema claro-escuro ⏳ opcional.
+- ⏳ **Sprint 4 — Big bet de criação:** ramificação condicional + modo gravação + blocos de fundamentos.
+- ⏳ **Sprint 5 — Plataforma:** nuvem/login/comunidade + defesa inteligente 2.0.
 
 ## Métricas-norte (qualidade)
 - Criar a 1ª jogada em **< 2 min**.

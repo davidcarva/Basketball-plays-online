@@ -7,6 +7,7 @@ import { applyReactiveToPlay, DEFENSE_SCHEMES } from './defense.js';
 import { getPresets } from './presets.js';
 import { getAllPlays, savePlay, deletePlay, exportPlay, importPlayFile, saveDraft, sharePlayURL } from './storage.js';
 import { canUndo, canRedo } from './history.js';
+import { getSettings, saveSettings } from './settings.js';
 
 export function initUI(app) {
   const $ = (id) => document.getElementById(id);
@@ -36,10 +37,15 @@ export function initUI(app) {
     togglePaths: $('togglePaths'),
     toggleDefense: $('toggleDefense'),
     toggleLabels: $('toggleLabels'),
+    toggleAutoCam: $('toggleAutoCam'),
     modeHalf: $('modeHalf'),
     modeFull: $('modeFull'),
     size5: $('size5'),
     size3: $('size3'),
+    teamName: $('teamName'),
+    offColor: $('offColor'),
+    defColor: $('defColor'),
+    cbPreset: $('cbPreset'),
     defenseSelect: $('defenseSelect'),
     reactBtn: $('reactBtn'),
     vsChips: $('vsChips'),
@@ -258,6 +264,27 @@ export function initUI(app) {
     }
   });
 
+  // ---------- Identidade de time (cores / nome) ----------
+  const team = getSettings();
+  els.offColor.value = team.offenseColor;
+  els.defColor.value = team.defenseColor;
+  els.teamName.value = team.teamName || '';
+  function applyTeamColors() {
+    team.offenseColor = els.offColor.value;
+    team.defenseColor = els.defColor.value;
+    app.recolorTeams(team.offenseColor, team.defenseColor);
+    saveSettings(team);
+  }
+  els.offColor.addEventListener('input', applyTeamColors);
+  els.defColor.addEventListener('input', applyTeamColors);
+  els.teamName.addEventListener('change', () => { team.teamName = els.teamName.value.trim(); saveSettings(team); });
+  els.cbPreset.addEventListener('click', () => {
+    els.offColor.value = '#1f77ff';
+    els.defColor.value = '#ff7f0e';
+    applyTeamColors();
+    toast('Cores acessíveis aplicadas');
+  });
+
   // ---------- Atalhos de teclado ----------
   window.addEventListener('keydown', (e) => {
     const t = e.target;
@@ -295,6 +322,7 @@ export function initUI(app) {
       if (lbl) lbl.visible = e.target.checked;
     }
   });
+  els.toggleAutoCam.addEventListener('change', (e) => { app.state.autoCam = e.target.checked; });
 
   els.resetFormationBtn.addEventListener('click', () => {
     app.state.play.frames[app.state.currentFrame].positions = defaultPositions();
@@ -360,6 +388,7 @@ export function initUI(app) {
     setSelection(app, null);
     syncUI();
     app.resetHistory?.();
+    app.cameraIntro?.();
     els.libraryModal.classList.add('hidden');
   }
   app.loadPlay = loadPlay;

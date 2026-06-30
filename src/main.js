@@ -4,7 +4,8 @@ import './style.css';
 
 import { buildCourt } from './court.js';
 import { buildArena } from './arena.js';
-import { createActors } from './entities.js';
+import { createActors, recolorTeams } from './entities.js';
+import { getSettings } from './settings.js';
 import { createCameraRig, updateCameraTween, goToPreset } from './cameras.js';
 import { createPlay, applyFrameInstant, rebuildPaths, updatePlayback, updateVisibility, startPlayback } from './play.js';
 import { initHistory, commit, undo, redo, resetHistory } from './history.js';
@@ -93,6 +94,7 @@ const app = {
     teamSize: 5,
     cam: 'diag',
     view: '3d',
+    autoCam: false,
   },
 };
 
@@ -178,6 +180,68 @@ app.exportVideo = () => {
   return true;
 };
 
+// ---------- Trilha (rastro) da bola na reprodução ----------
+const TRAIL_N = 14;
+const trail = new THREE.Group();
+trail.visible = false;
+scene.add(trail);
+const trailGeo = new THREE.SphereGeometry(0.11, 8, 6);
+const trailMeshes = [];
+for (let i = 0; i < TRAIL_N; i++) {
+  const m = new THREE.Mesh(trailGeo, new THREE.MeshBasicMaterial({
+    color: 0xff8a2a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  m.visible = false;
+  trail.add(m);
+  trailMeshes.push(m);
+}
+const trailBuf = [];
+function updateTrail(playing) {
+  if (!playing) {
+    if (trail.visible) { trail.visible = false; trailBuf.length = 0; for (const m of trailMeshes) m.visible = false; }
+    return;
+  }
+  trail.visible = true;
+  trailBuf.unshift(app.actors.get('BALL').mesh.position.clone());
+  if (trailBuf.length > TRAIL_N) trailBuf.pop();
+  for (let i = 0; i < TRAIL_N; i++) {
+    const m = trailMeshes[i];
+    if (i < trailBuf.length) {
+      m.visible = true;
+      m.position.copy(trailBuf[i]);
+      const t = 1 - i / TRAIL_N;
+      m.material.opacity = 0.5 * t;
+      m.scale.setScalar(0.4 + 0.6 * t);
+    } else {
+      m.visible = false;
+    }
+  }
+}
+
+// ---------- Inclinação (lean) dos jogadores na direção do movimento ----------
+const _identQ = new THREE.Quaternion();
+const _axis = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+function updateLean(playing, dt) {
+  for (const a of app.actors.values()) {
+    if (a.team === 'ball' || !a.mesh.visible) continue;
+    const cur = a.mesh.position;
+    if (!a._prev) a._prev = cur.clone();
+    const vx = cur.x - a._prev.x, vz = cur.z - a._prev.z;
+    a._prev.copy(cur);
+    let target = _identQ;
+    if (playing) {
+      const speed = Math.hypot(vx, vz) / Math.max(dt, 0.001);
+      if (speed > 0.2) {
+        const lean = Math.min(speed * 0.035, 0.26);
+        _axis.set(vz, 0, -vx).normalize();
+        target = _q.setFromAxisAngle(_axis, lean);
+      }
+    }
+    a.visual.quaternion.slerp(target, 0.18);
+  }
+}
+
 app.setCamera = (name) => {
   app.state.cam = name;
   goToPreset(app.cameraTween, camera, controls, name, app.state.mode);
@@ -188,6 +252,17 @@ app.setTeamSize = (n) => {
   app.state.teamSize = n;
   updateVisibility(app);
   rebuildPaths(app);
+};
+
+// Identidade de time: recolore os jogadores
+app.recolorTeams = (offHex, defHex) => recolorTeams(actors, offHex, defHex);
+
+// Intro de câmera ao abrir uma jogada (swoop do alto até o preset)
+app.cameraIntro = () => {
+  const cz = app.state.courtLength / 2;
+  camera.position.set(2, 26, cz + 7);
+  controls.target.set(0, 0, cz);
+  app.setCamera(app.state.cam);
 };
 
 // histórico (desfazer/refazer)
@@ -206,6 +281,10 @@ if (initial && Array.isArray(initial.frames)) {
   app.state.courtLength = app.state.mode === 'full' ? 28 : 14;
 }
 if (shared) clearShareHash();
+
+// aplica a identidade de time salva
+const settings = getSettings();
+app.recolorTeams(settings.offenseColor, settings.defenseColor);
 
 // monta a quadra/arena iniciais e posiciona tudo
 app.setCourtMode(app.state.mode);
@@ -235,6 +314,15 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   updatePlayback(app, dt);
   updateCameraTween(app.cameraTween, camera, controls, dt);
+  updateTrail(app.state.playing);
+  updateLean(app.state.playing, dt);
+
+  // auto-câmera: segue a bola na reprodução
+  if (app.state.autoCam && app.state.playing && app.state.view === '3d') {
+    const bp = app.actors.get('BALL').mesh.position;
+    controls.target.x += (bp.x - controls.target.x) * 0.05;
+    controls.target.z += (bp.z - controls.target.z) * 0.05;
+  }
 
   // pulso do glow neon no jogador selecionado
   const sel = app.state.selected && app.actors.get(app.state.selected);

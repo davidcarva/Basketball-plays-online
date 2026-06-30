@@ -52,6 +52,20 @@
       </div>
 
       <div class="field">
+        <span>Time</span>
+        <input id="teamName" type="text" placeholder="nome do time" />
+      </div>
+
+      <div class="field">
+        <span>Cores</span>
+        <div class="team-colors">
+          <input id="offColor" type="color" title="Cor do ataque" />
+          <input id="defColor" type="color" title="Cor da defesa" />
+          <button id="cbPreset" class="seg-btn" title="Cores acessíveis (daltônico)">A11y</button>
+        </div>
+      </div>
+
+      <div class="field">
         <span>Formato</span>
         <div class="seg">
           <button id="size5" class="seg-btn active">5v5</button>
@@ -101,6 +115,10 @@
       <label class="toggle">
         <input type="checkbox" id="toggleLabels" checked />
         <span>Mostrar números</span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="toggleAutoCam" />
+        <span>Auto-câmera (segue a bola)</span>
       </label>
 
       <hr />

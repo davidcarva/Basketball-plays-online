@@ -9,12 +9,11 @@ const COLORS = {
 };
 const CSS = { offense: '#0e3a86', defense: '#c42a37' };
 
-// Sprite com o número do jogador
-function makeLabel(text, cssColor) {
-  const size = 128;
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
+// Desenha o disco com o número (reutilizado ao recolorir o time)
+function drawLabel(canvas, text, cssColor) {
+  const size = canvas.width;
   const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, size, size);
   ctx.fillStyle = cssColor;
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, size / 2 - 6, 0, Math.PI * 2);
@@ -27,13 +26,21 @@ function makeLabel(text, cssColor) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, size / 2, size / 2 + 4);
+}
 
+// Sprite com o número do jogador
+function makeLabel(text, cssColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  drawLabel(canvas, text, cssColor);
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 4;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
   sprite.scale.set(0.7, 0.7, 0.7);
   sprite.position.y = 2.35;
   sprite.renderOrder = 10;
+  sprite.userData.canvas = canvas;
+  sprite.userData.text = text;
   return sprite;
 }
 
@@ -121,6 +128,7 @@ function makePlayer(color, darkColor) {
   glow.visible = false;
   group.add(glow);
   group.userData.glow = glow;
+  group.userData.parts = { body, head, collar };
 
   return group;
 }
@@ -129,12 +137,20 @@ function makeBall() {
   const group = new THREE.Group();
   // bola tamanho 7 (~0,24 m de diâmetro)
   const ball = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 22, 16),
+    new THREE.SphereGeometry(0.12, 24, 18),
     new THREE.MeshStandardMaterial({ color: 0xff7a18, roughness: 0.55 })
   );
   ball.castShadow = true;
-  ball.position.y = 0;
   group.add(ball);
+
+  // gomos (linhas pretas) p/ leitura de bola de basquete
+  const seamMat = new THREE.MeshBasicMaterial({ color: 0x1a1205 });
+  const seamGeo = new THREE.TorusGeometry(0.121, 0.006, 6, 36);
+  const s1 = new THREE.Mesh(seamGeo, seamMat);
+  const s2 = new THREE.Mesh(seamGeo, seamMat); s2.rotation.y = Math.PI / 2;
+  const s3 = new THREE.Mesh(seamGeo, seamMat); s3.rotation.x = Math.PI / 2;
+  ball.add(s1, s2, s3);
+
   group.userData.ball = ball;
   return group;
 }
@@ -152,12 +168,13 @@ export function createActors(scene) {
     const visual = team === 'ball' ? makeBall() : makePlayer(color, dark);
     root.add(visual);
 
+    let labelSprite = null;
     if (team !== 'ball') {
       const shadow = makeShadow();
       root.add(shadow);
-      const lbl = makeLabel(label, isOff ? CSS.offense : CSS.defense);
-      root.add(lbl);
-      root.userData.label = lbl;
+      labelSprite = makeLabel(label, isOff ? CSS.offense : CSS.defense);
+      root.add(labelSprite);
+      root.userData.label = labelSprite;
     }
 
     // Anel de seleção (escondido por padrão)
@@ -172,7 +189,12 @@ export function createActors(scene) {
 
     scene.add(root);
 
-    const actor = { id, team, label, color, mesh: root, selectionRing: sel, visual, glow: visual.userData.glow || null };
+    const actor = {
+      id, team, label, color, mesh: root, selectionRing: sel, visual,
+      glow: visual.userData.glow || null,
+      parts: visual.userData.parts || null,
+      labelSprite,
+    };
     root.userData.actorId = id;
     actors.set(id, actor);
   };
@@ -182,6 +204,23 @@ export function createActors(scene) {
   add('BALL', 'ball', '');
 
   return actors;
+}
+
+// Recolore os times (identidade): corpo/cabeça/ombros + número
+export function recolorTeams(actors, offHex, defHex) {
+  const dark = (hex) => new THREE.Color(hex).multiplyScalar(0.5);
+  for (const a of actors.values()) {
+    if (a.team === 'ball' || !a.parts) continue;
+    const hex = a.team === 'offense' ? offHex : defHex;
+    const c = new THREE.Color(hex);
+    a.parts.body.material.color.copy(c); a.parts.body.material.emissive.copy(c);
+    a.parts.head.material.color.copy(c); a.parts.head.material.emissive.copy(c);
+    a.parts.collar.material.color.copy(dark(hex));
+    if (a.labelSprite) {
+      drawLabel(a.labelSprite.userData.canvas, a.labelSprite.userData.text, hex);
+      a.labelSprite.material.map.needsUpdate = true;
+    }
+  }
 }
 
 export { COLORS };
