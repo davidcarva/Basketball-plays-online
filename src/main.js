@@ -11,6 +11,7 @@ import { createPlay, applyFrameInstant, rebuildPaths, updatePlayback, updateVisi
 import { initHistory, commit, undo, redo, resetHistory } from './history.js';
 import { getDraft, readSharedPlay, clearShareHash } from './storage.js';
 import { initInteraction } from './interaction.js';
+import { initShot } from './shoot.js';
 import { initUI } from './ui.js';
 
 // ---------- Renderer ----------
@@ -291,6 +292,7 @@ app.setCourtMode(app.state.mode);
 
 // ---------- Interação e UI ----------
 initInteraction(app);
+initShot(app);
 initUI(app);
 initHistory(app);
 
@@ -313,6 +315,7 @@ function animate() {
   resize();
   const dt = Math.min(clock.getDelta(), 0.05);
   updatePlayback(app, dt);
+  app.updateShot?.(dt);
   updateCameraTween(app.cameraTween, camera, controls, dt);
   updateTrail(app.state.playing);
   updateLean(app.state.playing, dt);

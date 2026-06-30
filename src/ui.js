@@ -54,6 +54,7 @@ export function initUI(app) {
     resetFormationBtn: $('resetFormationBtn'),
     clearFramesBtn: $('clearFramesBtn'),
     playBtn: $('playBtn'),
+    shootBtn: $('shootBtn'),
     frames: $('frames'),
     addFrameBtn: $('addFrameBtn'),
     speed: $('speed'),
@@ -350,6 +351,16 @@ export function initUI(app) {
     addFrame(app);
     app.commit();
     toast('Quadro adicionado — mova os jogadores');
+  });
+  // ---------- Arremesso ----------
+  app.onShotEnd = () => { els.shootBtn.disabled = false; };
+  els.shootBtn.addEventListener('click', () => {
+    if (app.shootBall()) {
+      els.shootBtn.disabled = true;
+      toast('Arremesso! 🏀');
+    } else {
+      toast('Pare a reprodução antes de arremessar');
+    }
   });
   els.speed.addEventListener('input', (e) => { app.state.speed = parseFloat(e.target.value); });
 

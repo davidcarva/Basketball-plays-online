@@ -153,23 +153,26 @@ function buildEndGroup(mat) {
   );
   rim.rotation.x = Math.PI / 2;
   rim.position.set(0, basketH, basketZ);
+  rim.name = 'rim';
   g.add(rim);
 
-  // glow do aro (anel aditivo)
+  // glow do aro (anel aditivo) — pulsa ao converter uma cesta
   const glow = new THREE.Mesh(
     new THREE.TorusGeometry(rimRadius + 0.06, 0.08, 12, 32),
     new THREE.MeshBasicMaterial({ color: 0xff8a2a, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false })
   );
   glow.rotation.x = Math.PI / 2;
   glow.position.set(0, basketH, basketZ);
+  glow.name = 'rimGlow';
   g.add(glow);
 
-  // rede (cone aberto)
+  // rede (cone aberto) — balança quando a bola entra
   const net = new THREE.Mesh(
     new THREE.CylinderGeometry(rimRadius * 0.9, rimRadius * 0.55, 0.35, 16, 1, true),
     new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, side: THREE.DoubleSide, wireframe: true })
   );
   net.position.set(0, basketH - 0.2, basketZ);
+  net.name = 'net';
   g.add(net);
 
   const post = new THREE.Mesh(

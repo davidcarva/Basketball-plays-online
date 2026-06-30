@@ -60,6 +60,8 @@ html, body {
   display: grid; place-items: center; flex: 0 0 auto;
 }
 .icon-btn.play { background: var(--accent); border-color: var(--accent); color: #1a1205; }
+.icon-btn.shoot { background: rgba(255,122,24,0.16); border-color: var(--accent); }
+.icon-btn.shoot:hover:not(:disabled) { background: rgba(255,122,24,0.3); }
 .icon-btn:disabled { opacity: 0.35; cursor: default; }
 #playName { /* deixa espaço p/ undo/redo */ }
 #setInput {
