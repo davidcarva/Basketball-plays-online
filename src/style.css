@@ -33,8 +33,8 @@ html, body {
 /* ---------- Barra superior ---------- */
 #topbar {
   position: absolute; top: 0; left: 0; right: 0;
-  display: flex; align-items: center; gap: 8px;
-  padding: max(8px, env(safe-area-inset-top)) 10px 8px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
   background: linear-gradient(180deg, rgba(15,17,21,0.92), rgba(15,17,21,0));
   z-index: 20;
 }
@@ -120,7 +120,7 @@ html, body {
 
 /* ---------- Câmeras ---------- */
 #cameras {
-  position: absolute; top: 64px; right: 10px;
+  position: absolute; top: 64px; right: max(10px, env(safe-area-inset-right));
   display: flex; flex-direction: column; gap: 6px; z-index: 15;
 }
 .cam-btn {
@@ -131,10 +131,11 @@ html, body {
 
 /* ---------- Painel de ferramentas ---------- */
 .panel {
-  position: absolute; top: 60px; left: 10px; width: 230px;
+  position: absolute; top: 60px; left: max(10px, env(safe-area-inset-left)); width: 230px;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px; z-index: 18; backdrop-filter: blur(8px);
   transition: transform 0.22s ease, opacity 0.22s ease;
+  max-height: calc(100dvh - 150px); overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .panel.hidden { transform: translateX(-115%); opacity: 0; pointer-events: none; }
 .panel-title { font-weight: 700; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
@@ -196,7 +197,7 @@ html, body {
 #timeline {
   position: absolute; left: 0; right: 0; bottom: 0;
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  padding: 10px max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   background: linear-gradient(0deg, rgba(15,17,21,0.95), rgba(15,17,21,0));
   z-index: 20;
 }
@@ -226,11 +227,11 @@ html, body {
 .modal.hidden { display: none; }
 .modal-box {
   background: var(--panel-solid); border: 1px solid var(--line); border-radius: 14px;
-  width: min(560px, 100%); max-height: 80vh; display: flex; flex-direction: column; overflow: hidden;
+  width: min(560px, 100%); max-height: 85dvh; display: flex; flex-direction: column; overflow: hidden;
 }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .modal-header h2 { margin: 0; font-size: 17px; }
-.modal-actions { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.modal-actions { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .modal-actions input[type=text] { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 9px; padding: 9px 11px; }
 .play-list { overflow-y: auto; padding: 8px; }
 .play-row { display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 10px; }
@@ -252,10 +253,44 @@ html, body {
 
 /* ---------- Mobile ---------- */
 @media (max-width: 720px) {
-  .panel { top: 56px; width: min(260px, 78vw); }
+  .panel { top: 56px; width: min(260px, 78vw); max-height: calc(100dvh - 130px); }
   #playName { flex: 1 1 auto; }
-  #newBtn, #saveBtn { padding: 9px 10px; }
+  #newBtn, #saveBtn, #authBtn { padding: 9px 10px; }
   .cam-btn { padding: 9px 11px; font-size: 13px; }
   .speed span { display: none; }
   .speed input { width: 64px; }
+}
+
+/* Telas estreitas (retrato): compacta a barra superior (pode quebrar em 2
+   linhas) e desce painel/câmeras/badge para não ficarem atrás dela. */
+@media (max-width: 480px) {
+  #topbar { gap: 6px; }
+  .icon-btn { width: 38px; height: 38px; font-size: 16px; }
+  .btn { padding: 8px 9px; font-size: 13px; }
+  #playName { flex: 1 1 90px; font-size: 14px; padding: 8px 10px; }
+  .panel { top: 100px; bottom: 74px; max-height: none; }
+  #cameras { top: 100px; }
+  .vs-badge { top: 100px; }
+}
+
+/* Celular na horizontal: altura curta — encolhe as barras, maximiza a quadra
+   e garante que o painel role em vez de transbordar. */
+@media (orientation: landscape) and (max-height: 500px) {
+  #topbar { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: 6px; gap: 6px; flex-wrap: nowrap; }
+  .icon-btn { width: 36px; height: 36px; font-size: 16px; }
+  .btn { padding: 7px 9px; font-size: 13px; }
+  #playName { flex: 0 1 150px; padding: 7px 10px; font-size: 13px; }
+
+  #cameras { top: 46px; gap: 4px; }
+  .cam-btn { padding: 5px 9px; font-size: 12px; }
+
+  .panel { top: 44px; bottom: 64px; max-height: none; width: min(240px, 60vw); padding: 10px; }
+
+  #timeline { padding-top: 6px; gap: 6px; }
+  .frame-chip { min-width: 34px; height: 34px; font-size: 13px; }
+  .frames { padding: 2px; }
+
+  #legendBtn { bottom: 58px; }
+  .legend { bottom: 100px; max-height: calc(100dvh - 150px); overflow-y: auto; }
+  .toast { bottom: 62px; }
 }

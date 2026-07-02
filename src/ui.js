@@ -319,7 +319,8 @@ export function initUI(app) {
 
   // ---------- Painel de ferramentas ----------
   els.menuBtn.addEventListener('click', () => els.tools.classList.toggle('hidden'));
-  if (window.innerWidth < 720) els.tools.classList.add('hidden');
+  // Em celular (tela estreita ou baixa/paisagem) começa oculto p/ liberar a quadra
+  if (window.innerWidth < 720 || window.innerHeight < 500) els.tools.classList.add('hidden');
 
   els.togglePaths.addEventListener('change', (e) => {
     app.state.showPaths = e.target.checked;
